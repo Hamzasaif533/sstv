@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SSTV Transmitter</title>
+  <meta name="description" content="Turn any picture into slow-scan TV audio and send it over the air.">
+  <script>try { var t = localStorage.getItem('sstv-theme'); if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); } catch (e) {}</script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="lockup">
+    <p class="lockup-name"><span class="dot" id="onAir"></span>SSTV</p>
+    <p class="lockup-role">Transmitter</p>
+  </header>
+
+  <main class="col">
+    <!-- Image -->
+    <section class="sec reveal" style="--d: 0">
+      <div class="sec-head">
+        <h2>Image</h2>
+        <span class="meta mono" id="dims">320 × 240</span>
+      </div>
+
+      <div class="stage" id="stage">
+        <canvas id="preview" width="320" height="240"></canvas>
+        <canvas id="veil" width="320" height="240"></canvas>
+        <div class="drop-hint" id="dropHint">Drop an image here</div>
+      </div>
+
+      <div class="row">
+        <label class="btn">
+          <input type="file" id="file" accept="image/*" hidden>
+          Choose image
+        </label>
+        <button class="btn ghost" id="pattern">Test pattern</button>
+        <span class="hint">or paste / drag one in</span>
+      </div>
+
+      <div class="field">
+        <span class="label">Fit</span>
+        <div class="seg" id="fit">
+          <button data-v="cover" class="on">Fill</button>
+          <button data-v="contain">Fit</button>
+          <button data-v="stretch">Stretch</button>
+        </div>
+      </div>
+
+      <div class="field two">
+        <label>
+          <span class="label">Text on image</span>
+          <input type="text" id="text" maxlength="24" placeholder="Callsign, e.g. N0CALL">
+        </label>
+        <label class="narrow">
+          <span class="label">Colour</span>
+          <input type="color" id="textColor" value="#ffffff">
+        </label>
+      </div>
+
+      <div class="field">
+        <span class="label">Text position</span>
+        <div class="seg" id="textPos">
+          <button data-v="top" class="on">Top</button>
+          <button data-v="bottom">Bottom</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Transmit -->
+    <section class="sec reveal" style="--d: 1">
+      <div class="sec-head"><h2>Transmit</h2></div>
+
+      <label class="field">
+        <span class="label">Mode</span>
+        <select id="mode">
+          <optgroup label="Robot">
+            <option value="robot36" selected>Robot 36 — colour, fast</option>
+            <option value="robot72">Robot 72</option>
+          </optgroup>
+          <optgroup label="Martin">
+            <option value="martin1">Martin M1</option>
+            <option value="martin2">Martin M2</option>
+          </optgroup>
+          <optgroup label="Scottie">
+            <option value="scottie1">Scottie S1</option>
+            <option value="scottie2">Scottie S2</option>
+            <option value="scottiedx">Scottie DX</option>
+          </optgroup>
+          <optgroup label="PD">
+            <option value="pd50">PD 50</option>
+            <option value="pd90">PD 90</option>
+            <option value="pd120">PD 120 — 640 × 496</option>
+            <option value="pd180">PD 180 — 640 × 496</option>
+          </optgroup>
+        </select>
+      </label>
+
+      <dl class="rows">
+        <div><dt>Resolution</dt><dd id="infoRes">320 × 240</dd></div>
+        <div><dt>Length</dt><dd id="infoLen">0:38</dd></div>
+        <div><dt>VIS code</dt><dd id="infoVis">8</dd></div>
+      </dl>
+
+      <label class="field">
+        <span class="label">Volume <span class="mono" id="volVal">70%</span></span>
+        <input type="range" id="volume" min="0" max="100" value="70">
+      </label>
+
+      <label class="check">
+        <input type="checkbox" id="preamble" checked>
+        <span>Send calibration tones before the header</span>
+      </label>
+
+      <button class="btn primary big" id="play">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+        <span>Transmit</span>
+      </button>
+
+      <div class="progress"><div id="bar"></div></div>
+      <div class="status">
+        <span id="status">Ready</span>
+        <span id="clock" class="mono">0:00 / 0:38</span>
+      </div>
+
+      <div class="split">
+        <select id="rate" aria-label="Sample rate">
+          <option value="44100">44.1 kHz</option>
+          <option value="48000" selected>48 kHz</option>
+        </select>
+        <button class="btn" id="download">Download WAV</button>
+      </div>
+    </section>
+
+    <!-- Waterfall -->
+    <section class="sec reveal" id="spectrum" style="--d: 2">
+      <div class="sec-head">
+        <h2>Spectrum</h2>
+        <span class="meta mono">1000 – 2500 Hz</span>
+      </div>
+      <div class="wf-wrap">
+        <canvas id="waterfall" width="900" height="160"></canvas>
+        <div class="ticks" id="ticks"></div>
+      </div>
+    </section>
+
+    <!-- Help -->
+    <section class="sec reveal prose" id="help" style="--d: 3">
+      <h2>How to receive</h2>
+      <ol>
+        <li><span>Open the <a href="receive.html">Receive</a> page on another device, or an SSTV app: <b>Robot36</b> (Android), <b>CQ SSTV</b> (iPhone), <b>MMSSTV</b> (Windows), <b>QSSTV</b> (Linux).</span></li>
+        <li><span>Hold it near this computer's speaker, or feed the audio into a radio.</span></li>
+        <li><span>Press <b>Transmit</b>. The receiver reads the mode from the header and draws the picture line by line.</span></li>
+      </ol>
+      <p class="small">On the air, make sure you're licensed and on an SSTV frequency (e.g. 14.230 MHz USB).</p>
+    </section>
+  </main>
+
+  <div class="fade" aria-hidden="true"></div>
+
+  <script src="sstv.js"></script>
+  <script src="waterfall.js"></script>
+  <script src="app.js"></script>
+  <script src="ui.js"></script>
+</body>
+</html>
